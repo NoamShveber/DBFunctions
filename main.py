@@ -1,12 +1,23 @@
 """
 Author: Noam Shveber
-Date: 13.1.22
 Program to calculate some of the functions used for the DB course in JCT.
 
 Usage example is at end of file.
 """
 
 import itertools
+from enum import Enum
+
+
+class Action(Enum):
+    EXIT = 0
+    ALL_KEYS = 1
+    CLOSURE = 2
+    CHECK_LOSSLESS = 3
+    CHECK_DEPENDENCIES_PRESERVING = 4
+    MINIMAL_COVER = 5
+    CALC_3NF = 6
+    CALC_BCNF = 7
 
 
 def Minimize(X: str, F: str):
@@ -418,6 +429,58 @@ def FindBCNFDecomposition(R: str, F: str):
     return FindBCNFDecomposition(r1, Fr1) + ',' + FindBCNFDecomposition(r2, Fr2)
 
 
+def main():
+    curR = input("Enter the scheme as a string. Example: 'ABCDE'\n")
+    curF = input("Enter the rules as a string. Example: 'A->BC,B->E,D->C,CD->AE'\n")
+    print("""
+0) Exit.
+1) Calculate all keys of (R, F).
+2) Calculate closure of attribute(s).
+3) Check if decomposition is lossless.
+4) Check if decomposition is dependencies preserving.
+5) Calculate minimal cover of F.
+6) Calculate the 3NF decomposition of (R, F).
+7) Calculate the BCNF decomposition of (R, F).\n
+    """
+          )
+
+    action = Action(int(input('Enter your choice: ')))
+    while True:
+        if action == Action.EXIT:
+            break
+
+        elif action == Action.ALL_KEYS:
+            print(All_Keys(curR, curF))
+
+        elif action == Action.CLOSURE:
+            tmp = input("Enter attribute(s) to calculate closure for. Example: 'AB'\n")
+            print(closure(curF, tmp))
+
+        elif action == Action.CHECK_LOSSLESS:
+            tmp = input("Enter decomposition(s) for lossless check. Example: 'AB,BC,CDE'\n")
+            print(LosslessDecomposition(curR, tmp, curF))
+
+        elif action == Action.CHECK_DEPENDENCIES_PRESERVING:
+            tmp = input("Enter decomposition(s) for dependency preserving check. Example: 'AB,BC,CDE'\n")
+            print(IsDependencyPreserving(curF, tmp))
+
+        elif action == Action.MINIMAL_COVER:
+            print(ComputeMinimalCover(curF))
+
+        elif action == Action.CALC_3NF:
+            print(Find3NFDecomposition(curR, curF))
+
+        elif action == Action.CALC_BCNF:
+            print(FindBCNFDecomposition(curR, curF))
+
+        else:
+            print("Wrong option. Please re-enter.")
+
+        action = Action(int(input('\nEnter your choice: ')))
+
+
+if __name__ == '__main__':
+    main()
 """
     >>> curR = 'ABCDE'
     >>> curF = 'A->BC,B->E,D->C,CD->AE'
