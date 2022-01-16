@@ -199,12 +199,12 @@ def LosslessDecomposition(R: str, decompositions: str, F: str) -> str:
     return "Not lossless"
 
 
-def DependencyPreservingCount(F: str, decompositions: str) -> int:
+def DependencyPreserving(F: str, decompositions: str) -> (int, bool):
     """
     Counts how many dependencies from the F were preserved in a decomposition.
     :param F: String of rules.
     :param decompositions: String of decompositions. For example: 'ABC,CDE'
-    :return: Count of depepndencies preserved.
+    :return: Count of dependencies preserved and if the decomposition is preserving dependencies.
     """
     dec = decompositions.split(',')
     preservedCount = 0
@@ -220,17 +220,7 @@ def DependencyPreservingCount(F: str, decompositions: str) -> int:
         if is_in(spl[1], z):
             preservedCount += 1
 
-    return preservedCount
-
-
-def IsDependencyPreserving(F: str, decompositions: str) -> bool:
-    """
-    Checks whether dependencies from the F were preserved in a decomposition.
-    :param F: String of rules.
-    :param decompositions: String of decompositions. For example: 'ABC,CDE'.
-    :return: If all dependencies preserved were preserved.
-    """
-    return len(F.split(',')) == DependencyPreservingCount(F, decompositions)
+    return preservedCount, preservedCount == len(F.split(','))
 
 
 def sort_string(s: str) -> str:
@@ -546,7 +536,9 @@ def main():
 
         elif action == Action.CHECK_DEPENDENCIES_PRESERVING:
             tmp = input("Enter decomposition(s) for dependency preserving check. Example: 'AB,BC,CDE'\n")
-            print(IsDependencyPreserving(curF, tmp))
+            count, flag = DependencyPreserving(curF, tmp)
+            print(str(count) + '/' + str(len(curF.split(','))) + ' dependencies preserved!')
+            print("Is the decomposition preserving dependencies? " + "Yes" if flag else "No")
 
         elif action == Action.MINIMAL_COVER:
             print(ComputeMinimalCover(curF))
