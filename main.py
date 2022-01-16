@@ -18,6 +18,8 @@ class Action(Enum):
     MINIMAL_COVER = 5
     CALC_3NF = 6
     CALC_BCNF = 7
+    CHECK_3NF = 8
+    CHECK_BCNF = 9
 
 
 def Minimize(X: str, F: str):
@@ -63,12 +65,12 @@ def All_Keys(R: str, F: str) -> list:
             spl = rule.split('->')
             if intersect(spl[1], k) != '':
                 s = union(difference(k, spl[1]), spl[0])  # S is a super-key!
-                if not any([(key in keys) for key in s]):
+                if not any([(key in s) for key in keys]):
                     _s = Minimize(s, F)
                     keys += [_s]
                     keyQueue += [_s]
 
-        return keys
+    return keys
 
 
 def intersect(A: str, B: str) -> str:
@@ -299,6 +301,41 @@ def ComputeMinimalCover(F: str) -> str:
     return F1
 
 
+def isRule3NF(R: str, F: str, rule: str) -> bool:
+    """
+    Checks whether a rule is qualified by the rules of BCNF.
+    :param R: String of scheme.
+    :param F: String of rules.
+    :param rule: The rule to check.
+    :return: True if rule is qualified, False otherwise.
+    """
+
+    spl = rule.split('->')  # For X->Y
+    if closure(F, spl[0]) == R:  # If X is super-key
+        return True
+
+    keys = All_Keys(R, F)
+    for attr in spl[1]:
+        if not (attr in spl[0] or  # If any attribute from Y is not in X
+                any([attr in key for key in keys])):  # and is not part of key:
+            return False
+
+    return True
+
+
+def is3NF(R: str, F: str) -> bool:
+    """
+    Checks whether a rule group is qualified by the rules of BCNF.
+    :param R: String of scheme.
+    :param F: String of rules.
+    :return: True if rule group is qualified, False otherwise.
+    """
+    for rule in F.split(','):
+        if not isRule3NF(R, F, rule):
+            return False
+    return True
+
+
 def Find3NFDecomposition(R: str, F: str) -> str:
     """
     Finds a 3NF decomposition according to the 3NFDecomposition algorithm.
@@ -440,7 +477,9 @@ def main():
 4) Check if decomposition is dependencies preserving.
 5) Calculate minimal cover of F.
 6) Calculate the 3NF decomposition of (R, F).
-7) Calculate the BCNF decomposition of (R, F).\n
+7) Calculate the BCNF decomposition of (R, F).
+8) Check if (R, F) meets the requirements of 3NF.
+9) Check if (R, F) meets the requirements of BCNF.\n
     """
           )
 
@@ -472,6 +511,12 @@ def main():
 
         elif action == Action.CALC_BCNF:
             print(FindBCNFDecomposition(curR, curF))
+
+        elif action == Action.CHECK_3NF:
+            print(is3NF(curR, curF))
+
+        elif action == Action.CHECK_BCNF:
+            print(isBCNF(curR, curF))
 
         else:
             print("Wrong option. Please re-enter.")
