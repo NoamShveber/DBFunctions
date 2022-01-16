@@ -352,13 +352,13 @@ def Find3NFDecomposition(R: str, F: str) -> str:
 
     res = res[:-1]
     keys = All_Keys(R, F)
-    if not any([c in keys for c in res.split(',')]):
+    if not any([is_in(key, sch) for sch in res.split(',') for key in keys]):
         res += ',' + keys[0]
 
     dictRes = []
     for sp in res.split(','):
         for sp1 in res.split(','):
-            if sp in sp1 and sp != sp1:
+            if is_in(sp, sp1) and sp != sp1:
                 break
         else:
             dictRes.append(sp)
@@ -470,7 +470,7 @@ def FindBCNFDecomposition(R: str, F: str):
 def main():
     curR = input("Enter the scheme as a string. Example: 'ABCDE'\n")
     curF = input("Enter the rules as a string. Example: 'A->BC,B->E,D->C,CD->AE'\n")
-    print("""
+    print("""\n
 0) Exit.
 1) Calculate all keys of (R, F).
 2) Calculate closure of attribute(s).
