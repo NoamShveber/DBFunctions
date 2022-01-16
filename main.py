@@ -20,6 +20,9 @@ class Action(Enum):
     CALC_BCNF = 7
     CHECK_3NF = 8
     CHECK_BCNF = 9
+    DEPENDENCIES_PROJECTION = 10
+    CHECK_3NF_DECOMPOSITION = 11
+    CHECK_BCNF_DECOMPOSITION = 12
 
 
 def Minimize(X: str, F: str):
@@ -104,6 +107,14 @@ def union(A: str, B: str) -> str:
     return sort_string(A + B)
 
 
+def strEqual(A: str, B: str) -> bool:
+    """
+    Checks if all letters of two strings are equal (not same order).
+    :return: True if A == B, False otherwise.
+    """
+    return is_in(A, B) and is_in(B, A)
+
+
 def CreateTable(R: str, decompositions: str):
     """
     Calculates the table to the lossless check of a decomposition.
@@ -111,10 +122,10 @@ def CreateTable(R: str, decompositions: str):
      :param decompositions: String of decompositions. For example: 'ABC,CDE'
      :return: The table for lossless check.
 
-     >>> CreateTable('ABCDE', 'BE,ABC,AD')
-     [['b11', 'a2', 'b13', 'b14', 'a5'],
-      ['a1', 'a2', 'a3', 'b24', 'b25'],
-      ['a1', 'b32', 'b33', 'a4', 'b35']]
+     # >>> CreateTable('ABCDE', 'BE,ABC,AD')
+     # [['b11', 'a2', 'b13', 'b14', 'a5'],
+     #  ['a1', 'a2', 'a3', 'b24', 'b25'],
+     #  ['a1', 'b32', 'b33', 'a4', 'b35']]
      """
     dec = decompositions.split(',')
     T = []
@@ -136,10 +147,10 @@ def ChaseTable(R: str, T, F: str):
     :param F: String of rules.
     :return: The completed chase table.
 
-    >>> ChaseTable('ABCDE', CreateTable('ABCDE', 'BE,ABC,AD'), 'A->BC,B->E,D->C,CD->AE')
-     [['b11', 'a2', 'b13', 'b14', 'a5'],
-      ['a1', 'a2', 'a3', 'b24', 'a5'],
-      ['a1', 'a2', 'a3', 'a4', 'a5']]
+    # >>> ChaseTable('ABCDE', CreateTable('ABCDE', 'BE,ABC,AD'), 'A->BC,B->E,D->C,CD->AE')
+    #  [['b11', 'a2', 'b13', 'b14', 'a5'],
+    #   ['a1', 'a2', 'a3', 'b24', 'a5'],
+    #   ['a1', 'a2', 'a3', 'a4', 'a5']]
     """
     attrDict = {}
     for i in range(len(R)):
@@ -311,7 +322,7 @@ def isRule3NF(R: str, F: str, rule: str) -> bool:
     """
 
     spl = rule.split('->')  # For X->Y
-    if closure(F, spl[0]) == R:  # If X is super-key
+    if strEqual(closure(F, spl[0]), R):  # If X is super-key
         return True
 
     keys = All_Keys(R, F)
@@ -365,6 +376,22 @@ def Find3NFDecomposition(R: str, F: str) -> str:
     return ','.join(dictRes) + '\n' + 'Possible Keys:' + str(keys)
 
 
+def isDecomposition3NF(F: str, decompositions: str) -> bool:
+    """
+    Checks whether a decomposition is 3NF or not.
+    :param F: String of rules.
+    :param decompositions: String of decompositions. For example: 'ABC,CDE'
+    :return: True if 3NF, False otherwise.
+    """
+    for dec in decompositions.split(','):
+        if len(dec) > 2:
+            fr = ComputeDependenciesInProjection(F, dec)
+            if not is3NF(dec, fr):
+                return False
+
+    return True
+
+
 def isRuleBCNF(R: str, F: str, rule: str) -> bool:
     """
     Checks whether a rule is qualified by the rules of BCNF.
@@ -375,7 +402,7 @@ def isRuleBCNF(R: str, F: str, rule: str) -> bool:
     """
 
     spl = rule.split('->')
-    if closure(F, spl[0]) == R or is_in(spl[1], spl[0]):
+    if strEqual(closure(F, spl[0]), R) or is_in(spl[1], spl[0]):
         return True
     return False
 
@@ -399,8 +426,8 @@ def powerSet(iterable):
     :param iterable: The iterable to generate all options from.
     :return: All subsets of the given iterable.
 
-    >>> list(powerSet('ABC'))
-    ['', 'A', 'B', 'C', 'AB', 'AC', 'BC', 'ABC']
+    # >>> list(powerSet('ABC'))
+    # ['', 'A', 'B', 'C', 'AB', 'AC', 'BC', 'ABC']
     """
 
     s = list(iterable)
@@ -424,13 +451,12 @@ def ComputeDependenciesInProjection(F: str, Ri: str):
             continue
 
         rightSide = intersect(closure(F, sub), Ri)
-        if rightSide == Ri:
+        if strEqual(rightSide, Ri):
             keys.append(sub)
 
-        if len(rightSide) != 0 and sub != rightSide:
-            rs = difference(rightSide, sub)
-            if not any([rs == t[1] and is_in(t[0], sub) for t in rules]):  # If not already exist as shorted version.
-                rules.add((sub, rs))                                    # For example: A -> C and AB -> C
+        rs = difference(rightSide, sub)
+        if not any([rs == t[1] and is_in(t[0], sub) for t in rules]) and len(rs) != 0:  # If not already exist as
+            rules.add((sub, rs))  # shorted version. For example: A -> C and AB -> C
 
     return ','.join(['->'.join(rule) for rule in rules])
 
@@ -466,6 +492,22 @@ def FindBCNFDecomposition(R: str, F: str):
     return FindBCNFDecomposition(r1, Fr1) + ',' + FindBCNFDecomposition(r2, Fr2)
 
 
+def isDecompositionBCNF(F: str, decompositions: str) -> bool:
+    """
+    Checks whether a decomposition is BCNF or not.
+    :param F: String of rules.
+    :param decompositions: String of decompositions. For example: 'ABC,CDE'
+    :return: True if BCNF, False otherwise.
+    """
+    for dec in decompositions.split(','):
+        if len(dec) > 2:
+            fr = ComputeDependenciesInProjection(F, dec)
+            if not isBCNF(dec, fr):
+                return False
+
+    return True
+
+
 def main():
     curR = input("Enter the scheme as a string. Example: 'ABCDE'\n")
     curF = input("Enter the rules as a string. Example: 'A->BC,B->E,D->C,CD->AE'\n")
@@ -479,7 +521,10 @@ def main():
 6) Calculate the 3NF decomposition of (R, F).
 7) Calculate the BCNF decomposition of (R, F).
 8) Check if (R, F) meets the requirements of 3NF.
-9) Check if (R, F) meets the requirements of BCNF.\n
+9) Check if (R, F) meets the requirements of BCNF.
+10) Compute dependencies in a given projection,
+11) Check if decomposition meets the requirements of 3NF.
+12) Check if decomposition meets the requirements of BCNF.
     """
           )
 
@@ -518,14 +563,27 @@ def main():
         elif action == Action.CHECK_BCNF:
             print(isBCNF(curR, curF))
 
+        elif action == Action.DEPENDENCIES_PROJECTION:
+            tmp = input("Enter decomposition to calculate dependency projection for. Example: 'AB'\n")
+            print(ComputeDependenciesInProjection(curF, tmp))
+
+        elif action == Action.CHECK_3NF_DECOMPOSITION:
+            tmp = input("Enter decomposition(s) for 3NF check. Example: 'AB,BC,CDE'\n")
+            print(isDecomposition3NF(curF, tmp))
+
+        elif action == Action.CHECK_BCNF_DECOMPOSITION:
+            tmp = input("Enter decomposition(s) for BCNF check. Example: 'AB,BC,CDE'\n")
+            print(isDecompositionBCNF(curF, tmp))
+
         else:
             print("Wrong option. Please re-enter.")
 
         action = Action(int(input('\nEnter your choice: ')))
 
 
-# print(ComputeDependenciesInProjection('A->BC,B->E,D->C,CD->AE', 'ABC'))
+# print(ComputeDependenciesInProjection('D->BC,AD->EG,E->C,G->AD,CEG->B,BC->A', 'ABC'))
 # print(All_Keys('ABC', 'AB->ABC,A->ABC,AC->ABC'))
+# print()
 
 if __name__ == '__main__':
     main()
