@@ -281,6 +281,7 @@ def ComputeMinimalCover(F: str) -> str:
         for leftSplit in spl[0]:
             if leftSplit in closure(F1, spl[0].replace(leftSplit, '')):
                 F1 = F1.replace(spl[0], spl[0].replace(leftSplit, ''))
+                spl[0] = spl[0].replace(leftSplit, '')
 
     Fz = ''
     while Fz != F1:
