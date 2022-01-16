@@ -296,8 +296,9 @@ def ComputeMinimalCover(F: str) -> str:
 
             if r[1] in closure(FWithoutRule, r[0]):
                 rules.remove(rule)
+                F1 = ','.join(rules)
 
-        F1 = ','.join(rules)
+
 
     return F1
 
@@ -357,7 +358,7 @@ def Find3NFDecomposition(R: str, F: str) -> str:
 
     dictRes = []
     for sp in res.split(','):
-        for sp1 in res.split(','):
+        for sp1 in dictRes:
             if is_in(sp, sp1) and sp != sp1:
                 break
         else:
