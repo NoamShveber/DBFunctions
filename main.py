@@ -5,7 +5,7 @@ Program to calculate some of the functions used for the DB course in JCT.
 Usage example is at end of file.
 """
 
-import itertools
+from itertools import chain, combinations
 from enum import Enum
 
 
@@ -193,12 +193,12 @@ def DependencyPreservingCount(F: str, decompositions: str) -> int:
     Counts how many dependencies from the F were preserved in a decomposition.
     :param F: String of rules.
     :param decompositions: String of decompositions. For example: 'ABC,CDE'
-    :return: Count of dependencies preserved.
+    :return: Count of depepndencies preserved.
     """
     dec = decompositions.split(',')
-    _z = ''
     preservedCount = 0
     for rule in F.split(','):
+        _z = ''
         spl = rule.split('->')
         z = spl[0]  # z = x
         while z != _z and not is_in(spl[1], z):
@@ -298,8 +298,6 @@ def ComputeMinimalCover(F: str) -> str:
                 rules.remove(rule)
                 F1 = ','.join(rules)
 
-
-
     return F1
 
 
@@ -395,46 +393,46 @@ def isBCNF(R: str, F: str) -> bool:
     return True
 
 
-def Fr(F: str, Ri: str):
+def powerSet(iterable):
     """
-    Calculates some of the dependencies in a projection (for BCNF calculations).
-    :param F: String of rules.
-    :param Ri: String of projection to calculate dependencies for.
-    :return: String of dependencies.
+    Returns all subsets of iterable.
+    :param iterable: The iterable to generate all options from.
+    :return: All subsets of the given iterable.
+
+    >>> list(powerSet('ABC'))
+    ['', 'A', 'B', 'C', 'AB', 'AC', 'BC', 'ABC']
     """
-    rules = []
-    for ch in Ri:
-        clo = closure(F, ch)
-        rightSide = ''
-        for attr in clo:
-            if attr in Ri and attr != ch:
-                rightSide += attr
 
-        if len(rightSide) != 0:
-            rules += [ch + '->' + rightSide]
-
-    return ','.join(rules)
+    s = list(iterable)
+    combination = chain.from_iterable(combinations(s, r) for r in range(len(s) + 1))
+    lstCom = list(combination)
+    return [''.join(c) for c in lstCom]
 
 
 def ComputeDependenciesInProjection(F: str, Ri: str):
     """
-    WARNING: This function doesn't work every time!
     Calculates all dependencies in a projection (for general purpose).
     :param F: String of rules.
     :param Ri: String of projection to calculate dependencies for.
     :return: String of dependencies.
     """
     rules = set()
-    all_sub = []
-    for i in range(len(Ri)):
-        all_sub += [''.join(set(i)) for i in itertools.product(Ri, repeat=i)]
-
+    all_sub = powerSet(Ri)[1:]
+    keys = []
     for sub in all_sub:
-        rightSide = intersect(closure(F, sub), Ri)
-        if len(rightSide) != 0 and sub != rightSide:
-            rules.add(sub + '->' + rightSide)
+        if any([key in sub for key in keys]):
+            continue
 
-    return ','.join(rules)
+        rightSide = intersect(closure(F, sub), Ri)
+        if rightSide == Ri:
+            keys.append(sub)
+
+        if len(rightSide) != 0 and sub != rightSide:
+            rs = difference(rightSide, sub)
+            if not any([rs == t[1] and is_in(t[0], sub) for t in rules]):  # If not already exist as shorted version.
+                rules.add((sub, rs))                                    # For example: A -> C and AB -> C
+
+    return ','.join(['->'.join(rule) for rule in rules])
 
 
 def FindBCNFDecomposition(R: str, F: str):
@@ -462,8 +460,8 @@ def FindBCNFDecomposition(R: str, F: str):
     else:
         return R
 
-    Fr1 = Fr(F, r1)
-    Fr2 = Fr(F, r2)
+    Fr1 = ComputeDependenciesInProjection(F, r1)
+    Fr2 = ComputeDependenciesInProjection(F, r2)
 
     return FindBCNFDecomposition(r1, Fr1) + ',' + FindBCNFDecomposition(r2, Fr2)
 
@@ -525,6 +523,9 @@ def main():
 
         action = Action(int(input('\nEnter your choice: ')))
 
+
+# print(ComputeDependenciesInProjection('A->BC,B->E,D->C,CD->AE', 'ABC'))
+# print(All_Keys('ABC', 'AB->ABC,A->ABC,AC->ABC'))
 
 if __name__ == '__main__':
     main()
