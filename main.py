@@ -5,7 +5,6 @@ Program to calculate some of the functions used for the DB course in JCT.
 Usage example is at end of file.
 """
 
-from itertools import chain, combinations
 from enum import Enum
 
 
@@ -410,18 +409,31 @@ def isBCNF(R: str, F: str) -> bool:
     return True
 
 
+def powerset(s):
+    """
+        Returns all subsets of iterable.
+        :param s: The iterable to generate all options from.
+        :return: All subsets of the given iterable.
+    """
+    x = len(s)
+    res = []
+    for i in range(1 << x):
+        res += [s[j] for j in range(x) if (i & (1 << j))]
+    return res
+
+
 def powerSet(iterable):
     """
     Returns all subsets of iterable.
     :param iterable: The iterable to generate all options from.
-    :return: All subsets of the given iterable.
+    :return: All subsets of the given iterable as list of strings.
 
     # >>> list(powerSet('ABC'))
     # ['', 'A', 'B', 'C', 'AB', 'AC', 'BC', 'ABC']
     """
 
     s = list(iterable)
-    combination = chain.from_iterable(combinations(s, r) for r in range(len(s) + 1))
+    combination = powerset(s)
     lstCom = list(combination)
     return [''.join(c) for c in lstCom]
 
@@ -506,7 +518,7 @@ def main():
 1) Calculate all keys of (R, F).
 2) Calculate closure of attribute(s).
 3) Check if decomposition is lossless.
-4) Check if decomposition is dependencies preserving.
+4) Check how many dependencies are preserved in a composition.
 5) Calculate minimal cover of F.
 6) Calculate the 3NF decomposition of (R, F).
 7) Calculate the BCNF decomposition of (R, F).
