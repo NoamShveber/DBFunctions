@@ -415,11 +415,14 @@ def powerset(s):
         :param s: The iterable to generate all options from.
         :return: All subsets of the given iterable.
     """
-    x = len(s)
-    res = []
-    for i in range(1 << x):
-        res += [s[j] for j in range(x) if (i & (1 << j))]
-    return res
+
+    if len(s) <= 1:
+        yield s
+        yield []
+    else:
+        for item in powerset(s[1:]):
+            yield [s[0]] + item
+            yield item
 
 
 def powerSet(iterable):
@@ -445,8 +448,9 @@ def ComputeDependenciesInProjection(F: str, Ri: str):
     :param Ri: String of projection to calculate dependencies for.
     :return: String of dependencies.
     """
-    rules = set()
-    all_sub = powerSet(Ri)[1:]
+    rules = []
+    all_sub = powerSet(Ri)[:-1]
+    all_sub.sort(key=len)
     keys = []
     for sub in all_sub:
         if any([key in sub for key in keys]):
@@ -458,7 +462,7 @@ def ComputeDependenciesInProjection(F: str, Ri: str):
 
         rs = difference(rightSide, sub)
         if not any([rs == t[1] and is_in(t[0], sub) for t in rules]) and len(rs) != 0:  # If not already exist as
-            rules.add((sub, rs))  # shorted version. For example: A -> C and AB -> C
+            rules.append((sub, rs))  # shorted version. For example: A -> C and AB -> C
 
     return ','.join(['->'.join(rule) for rule in rules])
 
@@ -589,7 +593,27 @@ def main():
 # print(All_Keys('ABC', 'AB->ABC,A->ABC,AC->ABC'))
 # print()
 
+def tests():
+    curR = 'ABCDEG'
+    curF = 'A->G,CD->E,GE->CD,E->B,B->ACG'
+    assert All_Keys(curR, curF) == ['E', 'CD', 'BD']
+    assert closure(curF, 'E') == 'ABCDEG'
+    assert closure(curF, 'AB') == 'ABCG'
+    assert LosslessDecomposition(curR, 'AG,CDE,EB,BA,BC', curF) == 'Lossless'
+    assert LosslessDecomposition(curR, 'ABC,CDEG', curF) == 'Not lossless'
+    assert DependencyPreserving(curF, 'AG,CDE,EB,BA,BC') == (5, True)
+    assert DependencyPreserving(curF, 'ABC,CDEG') == (2, False)
+    assert ComputeMinimalCover(curF) == 'A->G,CD->E,E->D,E->B,B->A,B->C'
+    assert Find3NFDecomposition(curR, curF) == "AG,CDE,EB,BA,BC\nPossible Keys:['E', 'CD', 'BD']"
+    assert FindBCNFDecomposition(curR, curF) == 'AG,ABC,BDE'
+    assert is3NF(curR, curF) is False
+    assert is3NF(curR, 'A->BCDEG') is True
+    assert isBCNF(curR, curF) is False
+    assert isBCNF(curR, 'A->BCDEG') is True
+
+
 if __name__ == '__main__':
+    # tests()
     main()
 """
     >>> curR = 'ABCDE'
