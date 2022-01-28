@@ -450,7 +450,7 @@ def ComputeDependenciesInProjection(F: str, Ri: str):
     """
     rules = []
     all_sub = powerSet(Ri)[:-1]
-    all_sub.sort(key=len)
+    all_sub.sort(key=lambda x: (len(x), x))  # Sort by size and alphabetically
     keys = []
     for sub in all_sub:
         if any([key in sub for key in keys]):
